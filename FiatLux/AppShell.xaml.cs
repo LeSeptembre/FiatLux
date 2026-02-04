@@ -1,10 +1,9 @@
-﻿namespace FiatLux
+﻿namespace FiatLux;
+
+public partial class AppShell : Shell
 {
-    public partial class AppShell : Shell
+    public AppShell()
     {
-        public AppShell()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

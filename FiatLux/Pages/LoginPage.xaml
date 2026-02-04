@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="FiatLux.Pages.LoginPage"
+    Title="Connexion">
+
+    <VerticalStackLayout
+        Padding="30"
+        Spacing="20"
+        VerticalOptions="Center">
+
+        <Label
+            Text="Connexion au serveur FiatLux"
+            FontSize="24"
+            HorizontalOptions="Center" />
+
+        <Entry
+            Placeholder="ws://10.0.0.109:81"
+            Text="{Binding Server}" />
+
+        <Button
+            Text="Se connecter"
+            Command="{Binding ConnectCommand}" />
+
+        <Label
+            Text="{Binding Status}"
+            HorizontalOptions="Center"
+            TextColor="Gray" />
+
+    </VerticalStackLayout>
+</ContentPage>
