@@ -1,15 +1,13 @@
-using FiatLux.ViewModels;
+﻿using FiatLux.ViewModels;
 
 namespace FiatLux.Pages;
 
 public partial class LoginPage : ContentPage
 {
-    public LoginPage()
+    // ✅ Injection du ViewModel
+    public LoginPage(LoginViewModel vm)
     {
         InitializeComponent();
-        BindingContext = new LoginViewModel();
+        BindingContext = vm;
     }
 }
-
-
-

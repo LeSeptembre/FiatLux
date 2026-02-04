@@ -1,4 +1,5 @@
-﻿using System.Windows.Input;
+﻿using System.Diagnostics;
+using System.Windows.Input;
 using FiatLux.Services;
 
 namespace FiatLux.ViewModels;
@@ -7,9 +8,10 @@ public class LoginViewModel : BindableObject
 {
     private readonly WebSocketService _ws;
 
-    public LoginViewModel()
+    // ✅ Injection du WebSocket partagé
+    public LoginViewModel(WebSocketService ws)
     {
-        _ws = new WebSocketService();
+        _ws = ws;
         ConnectCommand = new Command(async () => await Connect());
     }
 
@@ -36,13 +38,14 @@ public class LoginViewModel : BindableObject
             Status = "Connexion en cours...";
             await _ws.ConnectAsync(Server);
             Status = "Connecté ✅";
+            Debug.WriteLine("✅ Connecté au serveur WebSocket");
 
-            // Navigation future
-            // await Shell.Current.GoToAsync("//rooms");
+            await Shell.Current.GoToAsync("//rooms");
         }
         catch (Exception ex)
         {
             Status = "Erreur de connexion ❌";
+            Debug.WriteLine($"❌ Erreur: {ex.Message}");
         }
     }
 }
