@@ -16,5 +16,15 @@
         Title="Rooms"
         ContentTemplate="{DataTemplate local:RoomsPage}"
         Route="rooms" />
+        
+    <ShellContent
+        Title="Admin Login"
+        ContentTemplate="{DataTemplate local:AdminLoginPage}"
+        Route="adminlogin" />
+        
+    <ShellContent
+        Title="Admin Rooms"
+        ContentTemplate="{DataTemplate local:AdminRoomsPage}"
+        Route="adminrooms" />
 
 </Shell>

@@ -1,4 +1,4 @@
-﻿using FiatLux.Pages;
+using FiatLux.Pages;
 using FiatLux.Services;
 using FiatLux.ViewModels;
 using Microsoft.Extensions.Logging;
@@ -20,16 +20,23 @@ namespace FiatLux
 
 #if DEBUG
     		builder.Logging.AddDebug();
+#endif
+
+            // Services
             builder.Services.AddSingleton<WebSocketService>();
 
+            // ViewModels
             builder.Services.AddSingleton<RoomsViewModel>();
             builder.Services.AddSingleton<LoginViewModel>();
+            builder.Services.AddSingleton<AdminLoginViewModel>();
 
+            // Pages
             builder.Services.AddSingleton<RoomsPage>();
             builder.Services.AddSingleton<LoginPage>();
             builder.Services.AddSingleton<RoomDetailsPage>();
-
-#endif
+            builder.Services.AddSingleton<AdminLoginPage>();
+            builder.Services.AddSingleton<AdminRoomsPage>();
+            builder.Services.AddSingleton<AdminRoomDetailsPage>();
 
             return builder.Build();
         }

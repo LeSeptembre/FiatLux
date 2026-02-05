@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FiatLux.Pages.AdminRoomDetailsPage"
+             xmlns:models="clr-namespace:FiatLux.Models"
+             BackgroundColor="#0A0A0A">
+
+    <ScrollView>
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" Padding="24,0,24,24">
+            
+            <!-- Header with Back Button -->
+            <Grid Grid.Row="0" 
+                  ColumnDefinitions="Auto,*"
+                  Margin="0,60,0,24">
+                
+                <Border Grid.Column="0"
+                        BackgroundColor="#1A1A1A"
+                        StrokeThickness="0"
+                        WidthRequest="44"
+                        HeightRequest="44"
+                        Margin="0,0,16,0">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="10"/>
+                    </Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding BackCommand}"/>
+                    </Border.GestureRecognizers>
+                    <Label Text="←"
+                           FontSize="24"
+                           TextColor="#FFFFFF"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"/>
+                </Border>
+
+                <VerticalStackLayout Grid.Column="1" 
+                                   Spacing="4"
+                                   VerticalOptions="Center">
+                    <Label Text="{Binding RoomId}"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="24"
+                           TextColor="#FFFFFF"/>
+                    <Label Text="Admin Controls"
+                           FontFamily="OpenSansRegular"
+                           FontSize="14"
+                           TextColor="#EF4444"/>
+                </VerticalStackLayout>
+            </Grid>
+
+            <!-- Manual Mode Toggle -->
+            <Border Grid.Row="1"
+                    BackgroundColor="#1A1A1A"
+                    StrokeThickness="1"
+                    Stroke="#2A2A2A"
+                    Padding="20,16"
+                    Margin="0,0,0,16">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10"/>
+                </Border.StrokeShape>
+                
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                        <Label Text="Manual Mode"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="16"
+                               TextColor="#FFFFFF"/>
+                        <Label Text="Block mode changes for non-admin users"
+                               FontFamily="OpenSansRegular"
+                               FontSize="12"
+                               TextColor="#6B6B6B"/>
+                    </VerticalStackLayout>
+                    
+                    <Switch Grid.Column="1"
+                            IsToggled="{Binding IsManualMode}"
+                            OnColor="#EF4444"
+                            VerticalOptions="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- Manual Target Input -->
+            <Border Grid.Row="2"
+                    BackgroundColor="#1A1A1A"
+                    StrokeThickness="1"
+                    Stroke="#2A2A2A"
+                    Padding="20,16"
+                    Margin="0,0,0,24"
+                    IsVisible="{Binding IsManualMode}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10"/>
+                </Border.StrokeShape>
+                
+                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="12">
+                    <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
+                        <Label Text="Manual Target (lux)"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="16"
+                               TextColor="#FFFFFF"/>
+                        <Label Text="Set custom light level"
+                               FontFamily="OpenSansRegular"
+                               FontSize="12"
+                               TextColor="#6B6B6B"/>
+                    </VerticalStackLayout>
+                    
+                    <Entry Grid.Row="0" Grid.Column="1"
+                           Text="{Binding ManualTarget}"
+                           Keyboard="Numeric"
+                           FontFamily="OpenSansRegular"
+                           FontSize="18"
+                           TextColor="#FFFFFF"
+                           WidthRequest="100"
+                           HorizontalTextAlignment="Center"
+                           VerticalOptions="Center"
+                           BackgroundColor="#2A2A2A"/>
+                    
+                    <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                            Text="Apply Manual Target"
+                            Command="{Binding ApplyManualTargetCommand}"
+                            BackgroundColor="#FFFFFF"
+                            TextColor="#0A0A0A"
+                            FontFamily="OpenSansSemibold"
+                            HeightRequest="44"
+                            CornerRadius="8"/>
+                </Grid>
+            </Border>
+
+            <!-- Sensors Section -->
+            <VerticalStackLayout Grid.Row="3" Spacing="12" Margin="0,0,0,24">
+                <Label Text="Connected Sensors"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="18"
+                       TextColor="#FFFFFF"/>
+                
+                <CollectionView ItemsSource="{Binding Sensors}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Sensor">
+                            <Border BackgroundColor="#1A1A1A"
+                                    StrokeThickness="1"
+                                    Stroke="#2A2A2A"
+                                    Padding="16,12"
+                                    Margin="0,0,0,8">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <BoxView Grid.Column="0"
+                                             WidthRequest="6"
+                                             HeightRequest="6"
+                                             CornerRadius="3"
+                                             Color="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
+                                             VerticalOptions="Center"
+                                             Margin="0,0,12,0"/>
+                                    
+                                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                        <Label Text="{Binding SensorId}"
+                                               FontFamily="OpenSansSemibold"
+                                               FontSize="14"
+                                               TextColor="#FFFFFF"/>
+                                        <Label Text="{Binding LastUpdate, Converter={StaticResource TimestampToDateConverter}}"
+                                               FontFamily="OpenSansRegular"
+                                               FontSize="11"
+                                               TextColor="#6B6B6B"/>
+                                    </VerticalStackLayout>
+                                    
+                                    <VerticalStackLayout Grid.Column="2" 
+                                                       HorizontalOptions="End"
+                                                       Spacing="2">
+                                        <Label Text="{Binding Value, StringFormat='{0:F1}'}"
+                                               FontFamily="OpenSansSemibold"
+                                               FontSize="16"
+                                               TextColor="#FFFFFF"
+                                               HorizontalOptions="End"/>
+                                        <Label Text="{Binding Type}"
+                                               FontFamily="OpenSansRegular"
+                                               FontSize="10"
+                                               TextColor="#6B6B6B"
+                                               HorizontalOptions="End"/>
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+
+            <!-- Lamps Section -->
+            <VerticalStackLayout Grid.Row="4" Spacing="12">
+                <Label Text="Connected Lamps"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="18"
+                       TextColor="#FFFFFF"/>
+                
+                <CollectionView ItemsSource="{Binding Lamps}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Lamp">
+                            <Border BackgroundColor="#1A1A1A"
+                                    StrokeThickness="1"
+                                    Stroke="#2A2A2A"
+                                    Padding="16,12"
+                                    Margin="0,0,0,8">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <BoxView Grid.Column="0"
+                                             WidthRequest="6"
+                                             HeightRequest="6"
+                                             CornerRadius="3"
+                                             Color="{Binding Status, Converter={StaticResource LampStatusToColorConverter}}"
+                                             VerticalOptions="Center"
+                                             Margin="0,0,12,0"/>
+                                    
+                                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                        <Label Text="{Binding LampId}"
+                                               FontFamily="OpenSansSemibold"
+                                               FontSize="14"
+                                               TextColor="#FFFFFF"/>
+                                        <Label Text="{Binding LastUpdate, Converter={StaticResource TimestampToDateConverter}}"
+                                               FontFamily="OpenSansRegular"
+                                               FontSize="11"
+                                               TextColor="#6B6B6B"/>
+                                    </VerticalStackLayout>
+                                    
+                                    <VerticalStackLayout Grid.Column="2" 
+                                                       HorizontalOptions="End"
+                                                       Spacing="2">
+                                        <Label Text="{Binding Power, StringFormat='{0}%'}"
+                                               FontFamily="OpenSansSemibold"
+                                               FontSize="16"
+                                               TextColor="#FFFFFF"
+                                               HorizontalOptions="End"/>
+                                        <Label Text="{Binding Status}"
+                                               FontFamily="OpenSansRegular"
+                                               FontSize="10"
+                                               TextColor="#6B6B6B"
+                                               HorizontalOptions="End"/>
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+
+        </Grid>
+    </ScrollView>
+
+</ContentPage>

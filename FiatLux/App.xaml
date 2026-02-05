@@ -23,6 +23,10 @@
             <local:BoolToColorConverter x:Key="BoolToColorConverter"/>
             <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
             <local:BoolToConnectionColorConverter x:Key="BoolToConnectionColorConverter"/>
+            <local:BoolToManualModeColorConverter x:Key="BoolToManualModeColorConverter"/>
+            <local:StatusToColorConverter x:Key="StatusToColorConverter"/>
+            <local:LampStatusToColorConverter x:Key="LampStatusToColorConverter"/>
+            <local:TimestampToDateConverter x:Key="TimestampToDateConverter"/>
             
         </ResourceDictionary>
     </Application.Resources>
