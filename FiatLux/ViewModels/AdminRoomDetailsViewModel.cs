@@ -145,6 +145,7 @@ public class AdminRoomDetailsViewModel : BindableObject
             {
                 // Met à jour la lampe existante
                 existing.Power = l.GetProperty("power").GetInt32();
+                existing.Pwm = l.TryGetProperty("pwm", out var pwm) ? pwm.GetInt32() : existing.Power * 255 / 100;
                 existing.Status = l.GetProperty("status").GetString();
                 existing.LastUpdate = l.GetProperty("lastUpdate").GetInt64();
             }
@@ -155,6 +156,7 @@ public class AdminRoomDetailsViewModel : BindableObject
                 {
                     LampId = lampId,
                     Power = l.GetProperty("power").GetInt32(),
+                    Pwm = l.TryGetProperty("pwm", out var pwm) ? pwm.GetInt32() : l.GetProperty("power").GetInt32() * 255 / 100,
                     Status = l.GetProperty("status").GetString(),
                     LastUpdate = l.GetProperty("lastUpdate").GetInt64()
                 });
