@@ -25,7 +25,7 @@ ROOMS = ["201","203"]  # Ajoute d'autres salles ici : ["201", "202", "203"]
 
 # Plages horaires
 HEURE_JOUR = "07:00"    # Début journée
-HEURE_NUIT = "16:00"    # Début nuit
+HEURE_NUIT = "20:00"    # Début nuit
 
 # ============================================================================
 # CERTIFICAT CA
