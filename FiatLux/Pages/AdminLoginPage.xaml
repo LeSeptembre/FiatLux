@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FiatLux.Pages.AdminLoginPage"
+             BackgroundColor="#0A0A0A">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="32">
+        
+        <!-- Header -->
+        <VerticalStackLayout Grid.Row="0" Spacing="8" Margin="0,60,0,0">
+            <Label Text="Admin Access"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="32"
+                   TextColor="#FFFFFF"
+                   HorizontalOptions="Start"/>
+            <Label Text="Restricted Area"
+                   FontFamily="OpenSansRegular"
+                   FontSize="14"
+                   TextColor="#EF4444"
+                   HorizontalOptions="Start"/>
+        </VerticalStackLayout>
+
+        <!-- Login Form -->
+        <VerticalStackLayout Grid.Row="1" 
+                            VerticalOptions="Center"
+                            Spacing="24">
+            
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Password"
+                       FontFamily="OpenSansRegular"
+                       FontSize="12"
+                       TextColor="#6B6B6B"
+                       Margin="4,0"/>
+                
+                <Border BackgroundColor="#1A1A1A"
+                        StrokeThickness="1"
+                        Stroke="#2A2A2A">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8"/>
+                    </Border.StrokeShape>
+                    
+                    <Entry Text="{Binding Password}"
+                           IsPassword="True"
+                           FontFamily="OpenSansRegular"
+                           FontSize="16"
+                           TextColor="#FFFFFF"
+                           PlaceholderColor="#4A4A4A"
+                           Placeholder="Enter admin password"
+                           Margin="16,12"/>
+                </Border>
+            </VerticalStackLayout>
+
+            <!-- Status Message -->
+            <Border BackgroundColor="#1A1A1A"
+                    StrokeThickness="1"
+                    Stroke="#2A2A2A"
+                    Padding="16,12"
+                    IsVisible="{Binding StatusMessage, Converter={StaticResource StringToBoolConverter}}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8"/>
+                </Border.StrokeShape>
+                
+                <Label Text="{Binding StatusMessage}"
+                       FontFamily="OpenSansRegular"
+                       FontSize="14"
+                       TextColor="#6B6B6B"
+                       HorizontalOptions="Center"/>
+            </Border>
+
+            <!-- Login Button -->
+            <Border BackgroundColor="#FFFFFF"
+                    StrokeThickness="0"
+                    HeightRequest="52">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8"/>
+                </Border.StrokeShape>
+                
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding LoginCommand}"/>
+                </Border.GestureRecognizers>
+                
+                <Label Text="Login"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="16"
+                       TextColor="#0A0A0A"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"/>
+            </Border>
+
+            <!-- Back to Rooms -->
+            <Label Text="← Back to Rooms"
+                   FontFamily="OpenSansRegular"
+                   FontSize="14"
+                   TextColor="#6B6B6B"
+                   HorizontalOptions="Center"
+                   Margin="0,16,0,0">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding BackCommand}"/>
+                </Label.GestureRecognizers>
+            </Label>
+
+        </VerticalStackLayout>
+
+        <!-- Footer -->
+        <Label Grid.Row="2"
+               Text="Admin panel access only"
+               FontFamily="OpenSansRegular"
+               FontSize="12"
+               TextColor="#3A3A3A"
+               HorizontalOptions="Center"
+               Margin="0,0,0,20"/>
+               
+    </Grid>
+
+</ContentPage>

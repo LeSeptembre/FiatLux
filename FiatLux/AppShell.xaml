@@ -3,12 +3,28 @@
     x:Class="FiatLux.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:FiatLux"
-    Title="FiatLux">
+    xmlns:local="clr-namespace:FiatLux.Pages"
+    Shell.FlyoutBehavior="Disabled"
+    Shell.NavBarIsVisible="False">
 
     <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+        Title="Login"
+        ContentTemplate="{DataTemplate local:LoginPage}"
+        Route="login" />
+        
+    <ShellContent
+        Title="Rooms"
+        ContentTemplate="{DataTemplate local:RoomsPage}"
+        Route="rooms" />
+        
+    <ShellContent
+        Title="Admin Login"
+        ContentTemplate="{DataTemplate local:AdminLoginPage}"
+        Route="adminlogin" />
+        
+    <ShellContent
+        Title="Admin Rooms"
+        ContentTemplate="{DataTemplate local:AdminRoomsPage}"
+        Route="adminrooms" />
 
 </Shell>

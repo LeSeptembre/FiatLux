@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FiatLux.Pages.RoomDetailsPage"
+             BackgroundColor="#0A0A0A">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Padding="24,0">
+        
+        <!-- Header with Back Button -->
+        <Grid Grid.Row="0" 
+              ColumnDefinitions="Auto,*"
+              Margin="0,60,0,24">
+            
+            <Border Grid.Column="0"
+                    BackgroundColor="#1A1A1A"
+                    StrokeThickness="0"
+                    WidthRequest="44"
+                    HeightRequest="44"
+                    Margin="0,0,16,0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10"/>
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding BackCommand}"/>
+                </Border.GestureRecognizers>
+                <Label Text="←"
+                       FontSize="24"
+                       TextColor="#FFFFFF"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"/>
+            </Border>
+
+            <VerticalStackLayout Grid.Column="1" 
+                               Spacing="4"
+                               VerticalOptions="Center">
+                <Label Text="{Binding RoomId}"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="24"
+                       TextColor="#FFFFFF"/>
+                <Label Text="Lighting Control"
+                       FontFamily="OpenSansRegular"
+                       FontSize="14"
+                       TextColor="#6B6B6B"/>
+            </VerticalStackLayout>
+        </Grid>
+
+        <!-- Lock Warning Banner (visible si IsManualMode = true) -->
+        <Border Grid.Row="1"
+                BackgroundColor="#DC2626"
+                StrokeThickness="0"
+                Padding="20,14"
+                Margin="0,0,0,16"
+                IsVisible="{Binding IsManualMode}">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="10"/>
+            </Border.StrokeShape>
+            
+            <Grid ColumnDefinitions="Auto,*">
+                <Label Grid.Column="0"
+                       Text="🔒"
+                       FontSize="20"
+                       VerticalOptions="Center"
+                       Margin="0,0,12,0"/>
+                
+                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                    <Label Text="Salle verrouillée"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="14"
+                           TextColor="#FFFFFF"/>
+                    <Label Text="Mode manuel activé par un administrateur"
+                           FontFamily="OpenSansRegular"
+                           FontSize="12"
+                           TextColor="#FEE2E2"/>
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+
+        <!-- Current Status Cards -->
+        <Grid Grid.Row="2"
+              ColumnDefinitions="*,*,*"
+              ColumnSpacing="12"
+              Margin="0,0,0,24">
+            
+            <!-- Current Lux -->
+            <Border Grid.Column="0"
+                    BackgroundColor="#1A1A1A"
+                    StrokeThickness="1"
+                    Stroke="#2A2A2A"
+                    Padding="16,14">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10"/>
+                </Border.StrokeShape>
+                
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Current"
+                           FontFamily="OpenSansRegular"
+                           FontSize="11"
+                           TextColor="#6B6B6B"
+                           HorizontalOptions="Center"/>
+                    <Label Text="{Binding CurrentLux, StringFormat='{0:F0}'}"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="20"
+                           TextColor="#FFFFFF"
+                           HorizontalOptions="Center"/>
+                    <Label Text="lux"
+                           FontFamily="OpenSansRegular"
+                           FontSize="10"
+                           TextColor="#6B6B6B"
+                           HorizontalOptions="Center"
+                           Margin="0,-2,0,0"/>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Target Lux -->
+            <Border Grid.Column="1"
+                    BackgroundColor="#1A1A1A"
+                    StrokeThickness="1"
+                    Stroke="#2A2A2A"
+                    Padding="16,14">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10"/>
+                </Border.StrokeShape>
+                
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Target"
+                           FontFamily="OpenSansRegular"
+                           FontSize="11"
+                           TextColor="#6B6B6B"
+                           HorizontalOptions="Center"/>
+                    <Label Text="{Binding TargetLux, StringFormat='{0}'}"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="20"
+                           TextColor="#FFFFFF"
+                           HorizontalOptions="Center"/>
+                    <Label Text="lux"
+                           FontFamily="OpenSansRegular"
+                           FontSize="10"
+                           TextColor="#6B6B6B"
+                           HorizontalOptions="Center"
+                           Margin="0,-2,0,0"/>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Power -->
+            <Border Grid.Column="2"
+                    BackgroundColor="#1A1A1A"
+                    StrokeThickness="1"
+                    Stroke="#2A2A2A"
+                    Padding="16,14">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10"/>
+                </Border.StrokeShape>
+                
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Power"
+                           FontFamily="OpenSansRegular"
+                           FontSize="11"
+                           TextColor="#6B6B6B"
+                           HorizontalOptions="Center"/>
+                    <Label Text="{Binding CurrentPower, StringFormat='{0}'}"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="20"
+                           TextColor="#FFFFFF"
+                           HorizontalOptions="Center"/>
+                    <Label Text="%"
+                           FontFamily="OpenSansRegular"
+                           FontSize="10"
+                           TextColor="#6B6B6B"
+                           HorizontalOptions="Center"
+                           Margin="0,-2,0,0"/>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <!-- Current Mode Display -->
+        <Border Grid.Row="3"
+                BackgroundColor="#1A1A1A"
+                StrokeThickness="1"
+                Stroke="#2A2A2A"
+                Padding="20,16"
+                Margin="0,0,0,24">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="10"/>
+            </Border.StrokeShape>
+            
+            <Grid ColumnDefinitions="*,Auto">
+                <VerticalStackLayout Grid.Column="0" Spacing="4">
+                    <Label Text="Active Mode"
+                           FontFamily="OpenSansRegular"
+                           FontSize="11"
+                           TextColor="#6B6B6B"/>
+                    <Label Text="{Binding CurrentMode}"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="18"
+                           TextColor="#FFFFFF"/>
+                </VerticalStackLayout>
+                
+                <BoxView Grid.Column="1"
+                         WidthRequest="6"
+                         HeightRequest="6"
+                         CornerRadius="3"
+                         Color="#4ADE80"
+                         VerticalOptions="Center"
+                         Margin="16,0,0,0"/>
+            </Grid>
+        </Border>
+
+        <!-- Mode Grid -->
+        <Grid Grid.Row="4"
+              RowDefinitions="*,*"
+              ColumnDefinitions="*,*"
+              RowSpacing="12"
+              ColumnSpacing="12">
+
+            <!-- Professional Mode -->
+            <Border Grid.Row="0" Grid.Column="0"
+                    BackgroundColor="#1A1A1A"
+                    StrokeThickness="2"
+                    Stroke="{Binding IsProSelected, Converter={StaticResource BoolToColorConverter}}"
+                    Opacity="{Binding CanChangeMode, Converter={StaticResource BoolToOpacityConverter}}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ProCommand}"/>
+                </Border.GestureRecognizers>
+                
+                <Grid RowDefinitions="*,Auto,Auto" Padding="20">
+                    <Label Grid.Row="0"
+                           Text="750"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="42"
+                           TextColor="#FFFFFF"
+                           VerticalOptions="Start"
+                           Margin="0,8,0,0"/>
+                    
+                    <Label Grid.Row="1"
+                           Text="Professional"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="16"
+                           TextColor="#FFFFFF"
+                           VerticalOptions="End"
+                           Margin="0,0,0,4"/>
+                    
+                    <Label Grid.Row="2"
+                           Text="High intensity"
+                           FontFamily="OpenSansRegular"
+                           FontSize="12"
+                           TextColor="#6B6B6B"
+                           VerticalOptions="End"/>
+                </Grid>
+            </Border>
+
+            <!-- Comfort Mode -->
+            <Border Grid.Row="0" Grid.Column="1"
+                    BackgroundColor="#1A1A1A"
+                    StrokeThickness="2"
+                    Stroke="{Binding IsConfortSelected, Converter={StaticResource BoolToColorConverter}}"
+                    Opacity="{Binding CanChangeMode, Converter={StaticResource BoolToOpacityConverter}}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ConfortCommand}"/>
+                </Border.GestureRecognizers>
+                
+                <Grid RowDefinitions="*,Auto,Auto" Padding="20">
+                    <Label Grid.Row="0"
+                           Text="500"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="42"
+                           TextColor="#FFFFFF"
+                           VerticalOptions="Start"
+                           Margin="0,8,0,0"/>
+                    
+                    <Label Grid.Row="1"
+                           Text="Comfort"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="16"
+                           TextColor="#FFFFFF"
+                           VerticalOptions="End"
+                           Margin="0,0,0,4"/>
+                    
+                    <Label Grid.Row="2"
+                           Text="Balanced light"
+                           FontFamily="OpenSansRegular"
+                           FontSize="12"
+                           TextColor="#6B6B6B"
+                           VerticalOptions="End"/>
+                </Grid>
+            </Border>
+
+            <!-- Ambiance Mode -->
+            <Border Grid.Row="1" Grid.Column="0"
+                    BackgroundColor="#1A1A1A"
+                    StrokeThickness="2"
+                    Stroke="{Binding IsAmbianceSelected, Converter={StaticResource BoolToColorConverter}}"
+                    Opacity="{Binding CanChangeMode, Converter={StaticResource BoolToOpacityConverter}}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding AmbianceCommand}"/>
+                </Border.GestureRecognizers>
+                
+                <Grid RowDefinitions="*,Auto,Auto" Padding="20">
+                    <Label Grid.Row="0"
+                           Text="300"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="42"
+                           TextColor="#FFFFFF"
+                           VerticalOptions="Start"
+                           Margin="0,8,0,0"/>
+                    
+                    <Label Grid.Row="1"
+                           Text="Ambiance"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="16"
+                           TextColor="#FFFFFF"
+                           VerticalOptions="End"
+                           Margin="0,0,0,4"/>
+                    
+                    <Label Grid.Row="2"
+                           Text="Relaxed mood"
+                           FontFamily="OpenSansRegular"
+                           FontSize="12"
+                           TextColor="#6B6B6B"
+                           VerticalOptions="End"/>
+                </Grid>
+            </Border>
+
+            <!-- Dimmed Mode -->
+            <Border Grid.Row="1" Grid.Column="1"
+                    BackgroundColor="#1A1A1A"
+                    StrokeThickness="2"
+                    Stroke="{Binding IsTamiseSelected, Converter={StaticResource BoolToColorConverter}}"
+                    Opacity="{Binding CanChangeMode, Converter={StaticResource BoolToOpacityConverter}}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding TamiseCommand}"/>
+                </Border.GestureRecognizers>
+                
+                <Grid RowDefinitions="*,Auto,Auto" Padding="20">
+                    <Label Grid.Row="0"
+                           Text="150"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="42"
+                           TextColor="#FFFFFF"
+                           VerticalOptions="Start"
+                           Margin="0,8,0,0"/>
+                    
+                    <Label Grid.Row="1"
+                           Text="Dimmed"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="16"
+                           TextColor="#FFFFFF"
+                           VerticalOptions="End"
+                           Margin="0,0,0,4"/>
+                    
+                    <Label Grid.Row="2"
+                           Text="Evening light"
+                           FontFamily="OpenSansRegular"
+                           FontSize="12"
+                           TextColor="#6B6B6B"
+                           VerticalOptions="End"/>
+                </Grid>
+            </Border>
+
+        </Grid>
+               
+    </Grid>
+
+</ContentPage>

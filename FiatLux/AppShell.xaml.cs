@@ -1,10 +1,14 @@
-﻿namespace FiatLux
+using FiatLux.Pages;
+
+namespace FiatLux;
+
+public partial class AppShell : Shell
 {
-    public partial class AppShell : Shell
+    public AppShell()
     {
-        public AppShell()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+        
+        Routing.RegisterRoute("roomdetails", typeof(RoomDetailsPage));
+        Routing.RegisterRoute("adminroomdetails", typeof(AdminRoomDetailsPage));
     }
 }

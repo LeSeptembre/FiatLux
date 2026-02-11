@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FiatLux.Pages.LoginPage"
+             BackgroundColor="#0A0A0A">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="32">
+        
+        <!-- Header -->
+        <VerticalStackLayout Grid.Row="0" Spacing="8" Margin="0,60,0,0">
+            <Label Text="FiatLux"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="32"
+                   TextColor="#FFFFFF"
+                   HorizontalOptions="Start"/>
+            <Label Text="Lighting Control System"
+                   FontFamily="OpenSansRegular"
+                   FontSize="14"
+                   TextColor="#6B6B6B"
+                   HorizontalOptions="Start"/>
+        </VerticalStackLayout>
+
+        <!-- Connection Form -->
+        <VerticalStackLayout Grid.Row="1" 
+                            VerticalOptions="Center"
+                            Spacing="24">
+            
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Server Address"
+                       FontFamily="OpenSansRegular"
+                       FontSize="12"
+                       TextColor="#6B6B6B"
+                       Margin="4,0"/>
+                
+                <Border BackgroundColor="#1A1A1A"
+                        StrokeThickness="1"
+                        Stroke="#2A2A2A">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8"/>
+                    </Border.StrokeShape>
+                    
+                    <Entry Text="{Binding Server}"
+                           FontFamily="OpenSansRegular"
+                           FontSize="16"
+                           TextColor="#FFFFFF"
+                           PlaceholderColor="#4A4A4A"
+                           Placeholder="ws://192.168.1.1:81"
+                           Margin="16,12"/>
+                </Border>
+            </VerticalStackLayout>
+
+            <!-- Status Indicator -->
+            <Border BackgroundColor="#1A1A1A"
+                    StrokeThickness="1"
+                    Stroke="#2A2A2A"
+                    Padding="16,12"
+                    IsVisible="{Binding Status, Converter={StaticResource StringToBoolConverter}}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8"/>
+                </Border.StrokeShape>
+                
+                <Label Text="{Binding Status}"
+                       FontFamily="OpenSansRegular"
+                       FontSize="14"
+                       TextColor="#6B6B6B"
+                       HorizontalOptions="Center"/>
+            </Border>
+
+            <!-- Connect Button -->
+            <Border BackgroundColor="#FFFFFF"
+                    StrokeThickness="0"
+                    HeightRequest="52">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8"/>
+                </Border.StrokeShape>
+                
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ConnectCommand}"/>
+                </Border.GestureRecognizers>
+                
+                <Label Text="Connect"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="16"
+                       TextColor="#0A0A0A"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"/>
+            </Border>
+
+        </VerticalStackLayout>
+
+        <!-- Footer -->
+        <Label Grid.Row="2"
+               Text="v1.0.0"
+               FontFamily="OpenSansRegular"
+               FontSize="12"
+               TextColor="#3A3A3A"
+               HorizontalOptions="Center"
+               Margin="0,0,0,20"/>
+               
+    </Grid>
+
+</ContentPage>
