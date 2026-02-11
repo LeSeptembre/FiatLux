@@ -1,4 +1,4 @@
-namespace FiatLux.Models;
+﻿namespace FiatLux.Models;
 
 public class Sensor : BindableObject
 {
@@ -39,7 +39,7 @@ public class Lamp : BindableObject
     }
 
     private int _pwm;
-    public int Pwm  
+    public int Pwm  // ✅ NOUVEAU - Valeur PWM réelle 0-255
     {
         get => _pwm;
         set { _pwm = value; OnPropertyChanged(); }

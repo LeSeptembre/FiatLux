@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Windows.Input;
+using System.Diagnostics;
 using FiatLux.Services;
 
 namespace FiatLux.ViewModels;
@@ -14,9 +15,9 @@ public class RoomDetailsViewModel : BindableObject
     public string CurrentMode
     {
         get => _currentMode;
-        set 
-        { 
-            _currentMode = value; 
+        set
+        {
+            _currentMode = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsProSelected));
             OnPropertyChanged(nameof(IsConfortSelected));
@@ -50,18 +51,16 @@ public class RoomDetailsViewModel : BindableObject
     public bool IsManualMode
     {
         get => _isManualMode;
-        set 
-        { 
-            _isManualMode = value; 
+        set
+        {
+            _isManualMode = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanChangeMode));
         }
     }
 
-    // True si l'utilisateur PEUT changer le mode (pas verrouillé)
     public bool CanChangeMode => !IsManualMode;
 
-    // Properties to check which mode is selected
     public bool IsProSelected => CurrentMode == "Professional" || CurrentMode == "Professionnel";
     public bool IsConfortSelected => CurrentMode == "Comfort" || CurrentMode == "Confort";
     public bool IsAmbianceSelected => CurrentMode == "Ambiance";
@@ -84,7 +83,6 @@ public class RoomDetailsViewModel : BindableObject
         TamiseCommand = new Command(() => SendMode("Dimmed", 150));
         BackCommand = new Command(async () => await Shell.Current.GoToAsync(".."));
 
-        // Subscribe to WebSocket messages to update real-time data
         _ws.MessageReceived += OnMessageReceived;
     }
 
@@ -92,34 +90,107 @@ public class RoomDetailsViewModel : BindableObject
     {
         try
         {
+            Debug.WriteLine("📦 Message reçu dans ViewModel");
+
             var doc = JsonDocument.Parse(json);
 
             if (!doc.RootElement.TryGetProperty("rooms", out var roomsElement))
+            {
+                Debug.WriteLine("⚠️ Pas de clé 'rooms' dans le JSON");
                 return;
+            }
 
             foreach (var r in roomsElement.EnumerateArray())
             {
-                var id = r.GetProperty("roomId").GetString();
+                // ✅ SÉCURISÉ - TryGetProperty au lieu de GetProperty
+                if (!r.TryGetProperty("roomId", out var roomIdEl))
+                {
+                    Debug.WriteLine("⚠️ Pas de clé 'roomId' dans une room");
+                    continue;
+                }
+
+                var id = roomIdEl.GetString();
                 if (id == RoomId)
                 {
                     MainThread.BeginInvokeOnMainThread(() =>
                     {
-                        CurrentLux = r.GetProperty("lux").GetDouble();
-                        CurrentPower = r.GetProperty("lampPower").GetInt32();
-                        TargetLux = r.GetProperty("targetLux").GetInt32();
-                        CurrentMode = r.GetProperty("mode").GetString();
-                        
-                        // Récupère le statut de verrouillage
-                        if (r.TryGetProperty("isManualMode", out var isManual))
+                        try
                         {
-                            IsManualMode = isManual.GetBoolean();
+                            // ✅ SÉCURISÉ - Vérifie chaque propriété avant de l'utiliser
+                            if (r.TryGetProperty("lux", out var luxEl))
+                            {
+                                CurrentLux = luxEl.GetDouble();
+                                Debug.WriteLine($"  ✓ lux = {CurrentLux}");
+                            }
+                            else
+                            {
+                                Debug.WriteLine("  ⚠️ Clé 'lux' absente");
+                            }
+
+                            if (r.TryGetProperty("lampPower", out var powerEl))
+                            {
+                                CurrentPower = powerEl.GetInt32();
+                                Debug.WriteLine($"  ✓ lampPower = {CurrentPower}");
+                            }
+                            else
+                            {
+                                Debug.WriteLine("  ⚠️ Clé 'lampPower' absente");
+                            }
+
+                            if (r.TryGetProperty("targetLux", out var targetEl))
+                            {
+                                TargetLux = targetEl.GetInt32();
+                                Debug.WriteLine($"  ✓ targetLux = {TargetLux}");
+                            }
+                            else
+                            {
+                                Debug.WriteLine("  ⚠️ Clé 'targetLux' absente");
+                            }
+
+                            if (r.TryGetProperty("mode", out var modeEl))
+                            {
+                                CurrentMode = modeEl.GetString();
+                                Debug.WriteLine($"  ✓ mode = {CurrentMode}");
+                            }
+                            else
+                            {
+                                Debug.WriteLine("  ⚠️ Clé 'mode' absente");
+                            }
+
+                            if (r.TryGetProperty("isManualMode", out var isManual))
+                            {
+                                IsManualMode = isManual.GetBoolean();
+                                Debug.WriteLine($"  ✓ isManualMode = {IsManualMode}");
+                            }
+                            else
+                            {
+                                Debug.WriteLine("  ⚠️ Clé 'isManualMode' absente");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"❌ Erreur dans MainThread: {ex.Message}");
+                            Debug.WriteLine($"   Type: {ex.GetType().Name}");
+                            Debug.WriteLine($"   StackTrace: {ex.StackTrace}");
                         }
                     });
                     break;
                 }
             }
         }
-        catch { }
+        catch (KeyNotFoundException ex)
+        {
+            Debug.WriteLine($"❌ Clé manquante dans JSON!");
+            Debug.WriteLine($"   Message: {ex.Message}");
+            Debug.WriteLine($"   StackTrace: {ex.StackTrace}");
+            Debug.WriteLine($"   JSON reçu: {json}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"❌ Erreur parsing JSON: {ex.Message}");
+            Debug.WriteLine($"   Type: {ex.GetType().Name}");
+            Debug.WriteLine($"   StackTrace: {ex.StackTrace}");
+        }
     }
 
     private async void SendMode(string mode, int target)
@@ -127,12 +198,11 @@ public class RoomDetailsViewModel : BindableObject
         if (!_ws.IsConnected)
             return;
 
-        // Bloque si la salle est en mode manuel (verrouillée par admin)
         if (IsManualMode)
         {
             await Application.Current.MainPage.DisplayAlert(
-                "Salle verrouillée", 
-                "Cette salle est en mode manuel. Contactez un administrateur.", 
+                "Salle verrouillée",
+                "Cette salle est en mode manuel. Contactez un administrateur.",
                 "OK");
             return;
         }
