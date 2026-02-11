@@ -2,6 +2,8 @@
 #include <WiFiSSLClient.h>
 #include <ArduinoMqttClient.h>
 #include <ArduinoJson.h>
+#include <WiFiUdp.h>
+#include <NTPClient.h>
 
 // ============================================================================
 // CONFIGURATION
@@ -11,8 +13,8 @@ const char* ssid = "Bard";
 const char* password = "PipiEntreAmis67";
 const char* mqtt_server = "10.0.0.67";
 const int mqtt_port = 8883;
-const char* roomId = "201";
 const char* sensorId = "PHOTO_201";
+const char* roomId = "201";
 
 const char ca_cert[] = R"EOF(
 -----BEGIN CERTIFICATE-----
@@ -40,96 +42,98 @@ lsYNdZGljAo4//n5ag2GKU18b4XERJP5/izSjGgc6lIPTrUdra7ipYE=
 )EOF";
 
 // ============================================================================
-// INTERVALLES
-// ============================================================================
-
-const unsigned long READ_INTERVAL = 1000;        // Lecture toutes les 1s
-const unsigned long PUBLISH_INTERVAL = 10000;    // Publication toutes les 10s
-const unsigned long HEARTBEAT_INTERVAL = 120000; // Heartbeat toutes les 2 min
-
-// ============================================================================
-// VARIABLES GLOBALES
+// VARIABLES
 // ============================================================================
 
 WiFiSSLClient wifiClient;
 MqttClient mqttClient(wifiClient);
 
+// NTP
+WiFiUDP ntpUDP;
+// ✅ Serveur NTP Orange
+NTPClient timeClient(ntpUDP, "ntp.obspm.fr", 3600, 60000);
+
 const int photoPin = A0;
-
-unsigned long lastRead = 0;
-unsigned long lastPublish = 0;
-unsigned long lastHeartbeat = 0;
-
-float luxValues[10];
-int valueIndex = 0;
-int sampleCount = 0;
-
-bool modeJour = true;
+String currentMode = "jour";
 unsigned long bootTime = 0;
 
+// Publication intelligente basée sur le delta
+const unsigned long READ_INTERVAL = 10000;      // Lecture toutes les 10s
+const unsigned long HEARTBEAT_INTERVAL = 120000; // Heartbeat 2 min
+const float LUX_DELTA_THRESHOLD = 20.0;          // Seuil de changement : 20 lux
+const int CONSECUTIVE_CHANGES = 2;               // 2 mesures consécutives avec delta
+
+float lastPublishedLux = 0;
+float lastReadLux = 0;
+int consecutiveChanges = 0;
+
+unsigned long lastRead = 0;
+unsigned long lastHeartbeat = 0;
+
 // ============================================================================
-// FONCTION CALIBRATION
+// FONCTIONS
 // ============================================================================
 
-float rawToLux(int raw) {
-  if (raw <= 1) return 0.0;
-  if (raw <= 24) return (float)(raw - 1) / 23.0 * 800.0;
-  if (raw <= 150) return 800.0 + (float)(raw - 24) / 126.0 * 12200.0;
-  return 13000.0 + (float)(raw - 150) / 873.0 * 37000.0;
+float readLux() {
+  int raw = analogRead(photoPin);
+  return map(raw, 0, 1023, 0, 1000);
 }
 
-// ============================================================================
-// PUBLICATION DES DONNÉES
-// ============================================================================
-
-void publishData(float lux, bool isHeartbeat) {
-  StaticJsonDocument<256> doc;
+void publishData(bool isHeartbeat) {
+  float luxToPublish = isHeartbeat ? lastReadLux : lastReadLux;
   
+  StaticJsonDocument<256> doc;
   doc["sensorId"] = sensorId;
-  doc["lux"] = round(lux * 10) / 10.0;
-  doc["timestamp"] = millis();
   doc["room"] = roomId;
-  doc["mode"] = modeJour ? "jour" : "nuit";
+  doc["lux"] = luxToPublish;
+  doc["timestamp"] = timeClient.getEpochTime() * 1000UL;
+  doc["mode"] = currentMode;
   doc["uptime"] = millis() - bootTime;
-  doc["heartbeat"] = isHeartbeat;  // Indique si c'est un heartbeat
+  doc["heartbeat"] = isHeartbeat;
   
   String output;
   serializeJson(doc, output);
   
   String topic = String("campus/capteur/") + roomId;
-  
   mqttClient.beginMessage(topic);
   mqttClient.print(output);
+  mqttClient.endMessage();
   
-  if (mqttClient.endMessage()) {
-    if (isHeartbeat) {
-      Serial.print("HEARTBEAT: ");
-    } else {
-      Serial.print("DATA: ");
-    }
-    Serial.println(output);
+  if (isHeartbeat) {
+    Serial.print(">>> HEARTBEAT: ");
+  } else {
+    Serial.print(">>> DELTA: ");
+  }
+  Serial.print(output);
+  Serial.print(" (change: ");
+  Serial.print(abs(luxToPublish - lastPublishedLux), 1);
+  Serial.println(" lux)");
+  
+  // Met à jour la dernière valeur publiée
+  if (!isHeartbeat) {
+    lastPublishedLux = luxToPublish;
+    consecutiveChanges = 0;  // Reset le compteur
   }
 }
-
-// ============================================================================
-// GESTION MQTT
-// ============================================================================
 
 void onMqttMessage(int messageSize) {
   String topic = mqttClient.messageTopic();
   String msg = mqttClient.readString();
   
-  if (topic == "campus/config/schedule") {
-    StaticJsonDocument<128> doc;
-    if (deserializeJson(doc, msg) == DeserializationError::Ok) {
-      String mode = doc["mode"];
+  StaticJsonDocument<200> doc;
+  if (deserializeJson(doc, msg)) return;
+  
+  if (topic.indexOf("config") >= 0 && doc.containsKey("mode")) {
+    String newMode = doc["mode"].as<String>();
+    if (newMode != currentMode) {
+      currentMode = newMode;
+      Serial.print("Mode change: ");
+      Serial.println(currentMode);
       
-      if (mode == "jour") {
-        modeJour = true;
-        Serial.println("🌞 Mode JOUR activé");
-      } else if (mode == "nuit") {
-        modeJour = false;
-        Serial.println("🌙 Mode NUIT activé (veille)");
+      // Reset les compteurs lors du changement de mode
+      if (currentMode == "jour") {
+        lastPublishedLux = lastReadLux;
+        consecutiveChanges = 0;
       }
     }
   }
@@ -140,13 +144,17 @@ void reconnectMQTT() {
   
   Serial.print("MQTT...");
   
-  String clientId = String("capteur_photo_") + roomId;
+  String clientId = String("capteur_") + sensorId;
   mqttClient.setId(clientId.c_str());
   
   if (mqttClient.connect(mqtt_server, mqtt_port)) {
     Serial.println(" OK");
-    mqttClient.subscribe("campus/config/schedule");
-    Serial.println("✓ Abonné à campus/config/schedule");
+    
+    String configTopic = String("campus/config/") + roomId;
+    mqttClient.subscribe(configTopic);
+    
+    Serial.print("Sub: ");
+    Serial.println(configTopic);
   } else {
     Serial.print(" ERR:");
     Serial.println(mqttClient.connectError());
@@ -158,17 +166,23 @@ void reconnectMQTT() {
 // ============================================================================
 
 void setup() {
+  pinMode(photoPin, INPUT);
   Serial.begin(115200);
   delay(1000);
   
   bootTime = millis();
   
-  Serial.println("\n=== CAPTEUR PHOTORÉSISTANCE v2 ===");
+  Serial.println("\n=== CAPTEUR PHOTORESISTANCE v4 - DELTA ===");
   Serial.print("Salle: ");
-  Serial.println(roomId);
-  Serial.print("Sensor ID: ");
+  Serial.print(roomId);
+  Serial.print(" | ID: ");
   Serial.println(sensorId);
+  Serial.print("Seuil delta: ");
+  Serial.print(LUX_DELTA_THRESHOLD, 0);
+  Serial.print(" lux | Consecutives: ");
+  Serial.println(CONSECUTIVE_CHANGES);
   
+  // WiFi
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -177,6 +191,25 @@ void setup() {
   Serial.println(" WiFi OK");
   Serial.println(WiFi.localIP());
   
+  // NTP SYNC
+  Serial.print("NTP...");
+  timeClient.begin();
+  int attempts = 0;
+  while (!timeClient.update() && attempts < 10) {
+    timeClient.forceUpdate();
+    delay(1000);
+    Serial.print(".");
+    attempts++;
+  }
+  if (attempts < 10) {
+    Serial.println(" OK");
+    Serial.print("Heure: ");
+    Serial.println(timeClient.getFormattedTime());
+  } else {
+    Serial.println(" TIMEOUT");
+  }
+  
+  // MQTT
   wifiClient.setCACert(ca_cert);
   mqttClient.onMessage(onMqttMessage);
   mqttClient.setKeepAliveInterval(60000);
@@ -184,14 +217,17 @@ void setup() {
   
   reconnectMQTT();
   
-  Serial.println("\n=== CONFIGURATION ===");
-  Serial.println("Data: toutes les 10s");
-  Serial.println("Heartbeat: toutes les 2 min");
   Serial.println("=== PRET ===\n");
+  
+  // Lecture initiale
+  lastReadLux = readLux();
+  lastPublishedLux = lastReadLux;
+  publishData(false);
 }
 
 void loop() {
   mqttClient.poll();
+  timeClient.update();
   
   // Reconnexion MQTT
   static unsigned long lastReconnect = 0;
@@ -200,61 +236,50 @@ void loop() {
     reconnectMQTT();
   }
   
-  unsigned long now = millis();
-  
-  // ============================================================================
-  // HEARTBEAT (toutes les 2 minutes, même en mode nuit)
-  // ============================================================================
-  if (now - lastHeartbeat >= HEARTBEAT_INTERVAL) {
-    lastHeartbeat = now;
+  // Lecture toutes les 10s (mode jour uniquement)
+  if (currentMode == "jour" && millis() - lastRead >= READ_INTERVAL) {
+    lastRead = millis();
     
-    // Lecture instantanée pour le heartbeat
-    int rawValue = analogRead(photoPin);
-    float luxValue = rawToLux(rawValue);
+    float currentLux = readLux();
+    float delta = abs(currentLux - lastPublishedLux);
     
-    publishData(luxValue, true);  // heartbeat=true
-  }
-  
-  // ============================================================================
-  // MODE NUIT : arrête ici (sauf heartbeat)
-  // ============================================================================
-  if (!modeJour) {
-    delay(1000);
-    return;
-  }
-  
-  // ============================================================================
-  // MODE JOUR : mesures continues
-  // ============================================================================
-  
-  // Lecture toutes les secondes
-  if (now - lastRead >= READ_INTERVAL) {
-    lastRead = now;
+    Serial.print("Mesure: ");
+    Serial.print(currentLux, 1);
+    Serial.print(" lux | Delta: ");
+    Serial.print(delta, 1);
+    Serial.print(" lux | ");
     
-    int rawValue = analogRead(photoPin);
-    float luxValue = rawToLux(rawValue);
-    
-    luxValues[valueIndex] = luxValue;
-    valueIndex = (valueIndex + 1) % 10;
-    if (sampleCount < 10) sampleCount++;
-    
-    Serial.print("Raw:");
-    Serial.print(rawValue);
-    Serial.print(" Lux:");
-    Serial.println(luxValue, 1);
-  }
-  
-  // Publication toutes les 10 secondes
-  if (now - lastPublish >= PUBLISH_INTERVAL && sampleCount == 10) {
-    lastPublish = now;
-    
-    // Moyenne des 10 dernières valeurs
-    float sum = 0;
-    for (int i = 0; i < 10; i++) {
-      sum += luxValues[i];
+    // Vérifie si le delta dépasse le seuil
+    if (delta >= LUX_DELTA_THRESHOLD) {
+      consecutiveChanges++;
+      Serial.print("Change detected (");
+      Serial.print(consecutiveChanges);
+      Serial.print("/");
+      Serial.print(CONSECUTIVE_CHANGES);
+      Serial.println(")");
+      
+      // Publie après 2 mesures consécutives avec delta
+      if (consecutiveChanges >= CONSECUTIVE_CHANGES) {
+        lastReadLux = currentLux;
+        publishData(false);
+      }
+    } else {
+      // Pas de changement significatif
+      if (consecutiveChanges > 0) {
+        Serial.print("Reset counter (delta too small)");
+      } else {
+        Serial.print("Stable");
+      }
+      Serial.println();
+      consecutiveChanges = 0;
     }
-    float moyenneLux = sum / 10.0;
     
-    publishData(moyenneLux, false);  // heartbeat=false (données normales)
+    lastReadLux = currentLux;
+  }
+  
+  // Heartbeat toutes les 2 min
+  if (millis() - lastHeartbeat >= HEARTBEAT_INTERVAL) {
+    lastHeartbeat = millis();
+    publishData(true);
   }
 }
