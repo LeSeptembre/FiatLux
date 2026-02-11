@@ -74,9 +74,9 @@ public class RoomsViewModel : BindableObject
     private async Task Reconnect()
     {
         ConnectionStatus = "Reconnecting...";
-        
+
         bool success = await _ws.ReconnectAsync();
-        
+
         if (success)
         {
             ConnectionStatus = "Connected";
@@ -93,7 +93,7 @@ public class RoomsViewModel : BindableObject
     {
         try
         {
-            Debug.WriteLine("📦 Message reçu dans ViewModel");
+            Debug.WriteLine("📦 Message reçu dans RoomsViewModel");
             DebugMessage = json;
 
             var doc = JsonDocument.Parse(json);
@@ -106,117 +106,180 @@ public class RoomsViewModel : BindableObject
 
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                // Au lieu de Clear(), on met à jour les rooms existantes
                 foreach (var r in roomsElement.EnumerateArray())
                 {
-                    var roomId = r.GetProperty("roomId").GetString();
-                    
-                    // Cherche si la room existe déjà
+                    if (!r.TryGetProperty("roomId", out var roomIdEl))
+                    {
+                        Debug.WriteLine("⚠️ Pas de 'roomId' dans une room");
+                        continue;
+                    }
+
+                    var roomId = roomIdEl.GetString();
                     var existingRoom = Rooms.FirstOrDefault(room => room.RoomId == roomId);
-                    
+
                     if (existingRoom != null)
                     {
-                        // Met à jour la room existante
-                        existingRoom.Lux = r.GetProperty("lux").GetDouble();
-                        existingRoom.LampPower = r.GetProperty("lampPower").GetInt32();
-                        existingRoom.TargetLux = r.GetProperty("targetLux").GetInt32();
-                        existingRoom.Mode = r.GetProperty("mode").GetString();
-                        
+                        // ✅ FIXÉ - Met à jour uniquement les propriétés présentes
+                        if (r.TryGetProperty("lux", out var luxEl))
+                            existingRoom.Lux = luxEl.GetDouble();
+
+                        if (r.TryGetProperty("lampPower", out var powerEl))
+                            existingRoom.LampPower = powerEl.GetInt32();
+
+                        if (r.TryGetProperty("targetLux", out var targetEl))
+                            existingRoom.TargetLux = targetEl.GetInt32();
+
+                        if (r.TryGetProperty("mode", out var modeEl))
+                            existingRoom.Mode = modeEl.GetString();
+
                         if (r.TryGetProperty("isManualMode", out var isManual))
-                        {
                             existingRoom.IsManualMode = isManual.GetBoolean();
-                        }
-                        
-                        // Met à jour les sensors si présents
+
+                        // ✅ FIXÉ - Sensors avec TryGetProperty
                         if (r.TryGetProperty("sensors", out var sensorsElement))
                         {
                             existingRoom.Sensors.Clear();
                             foreach (var s in sensorsElement.EnumerateArray())
                             {
-                                existingRoom.Sensors.Add(new Sensor
-                                {
-                                    SensorId = s.GetProperty("sensorId").GetString(),
-                                    Type = s.GetProperty("type").GetString(),
-                                    Value = s.GetProperty("value").GetDouble(),
-                                    LastUpdate = s.GetProperty("lastUpdate").GetInt64(),
-                                    Status = s.GetProperty("status").GetString()
-                                });
+                                var sensor = new Sensor();
+
+                                if (s.TryGetProperty("sensorId", out var sIdEl))
+                                    sensor.SensorId = sIdEl.GetString();
+
+                                if (s.TryGetProperty("type", out var typeEl))
+                                    sensor.Type = typeEl.GetString();
+
+                                if (s.TryGetProperty("value", out var valEl))
+                                    sensor.Value = valEl.GetDouble();
+
+                                if (s.TryGetProperty("lastUpdate", out var updateEl))
+                                    sensor.LastUpdate = updateEl.GetInt64();
+
+                                if (s.TryGetProperty("status", out var statusEl))
+                                    sensor.Status = statusEl.GetString();
+
+                                existingRoom.Sensors.Add(sensor);
                             }
                         }
-                        
-                        // Met à jour les lamps si présents
+
+                        // ✅ FIXÉ - Lamps avec TryGetProperty
                         if (r.TryGetProperty("lamps", out var lampsElement))
                         {
                             existingRoom.Lamps.Clear();
                             foreach (var l in lampsElement.EnumerateArray())
                             {
-                                existingRoom.Lamps.Add(new Lamp
-                                {
-                                    LampId = l.GetProperty("lampId").GetString(),
-                                    Power = l.GetProperty("power").GetInt32(),
-                                    Status = l.GetProperty("status").GetString(),
-                                    LastUpdate = l.GetProperty("lastUpdate").GetInt64()
-                                });
+                                var lamp = new Lamp();
+
+                                if (l.TryGetProperty("lampId", out var lIdEl))
+                                    lamp.LampId = lIdEl.GetString();
+
+                                if (l.TryGetProperty("power", out var powEl))
+                                    lamp.Power = powEl.GetInt32();
+
+                                if (l.TryGetProperty("pwm", out var pwmEl))
+                                    lamp.Pwm = pwmEl.GetInt32();
+                                else if (l.TryGetProperty("power", out var pow2El))
+                                    lamp.Pwm = pow2El.GetInt32() * 255 / 100;
+
+                                if (l.TryGetProperty("status", out var statEl))
+                                    lamp.Status = statEl.GetString();
+
+                                if (l.TryGetProperty("lastUpdate", out var updEl))
+                                    lamp.LastUpdate = updEl.GetInt64();
+
+                                existingRoom.Lamps.Add(lamp);
                             }
                         }
                     }
                     else
                     {
-                        // Ajoute une nouvelle room
-                        var newRoom = new Room
-                        {
-                            RoomId = roomId,
-                            Lux = r.GetProperty("lux").GetDouble(),
-                            LampPower = r.GetProperty("lampPower").GetInt32(),
-                            TargetLux = r.GetProperty("targetLux").GetInt32(),
-                            Mode = r.GetProperty("mode").GetString()
-                        };
-                        
+                        // ✅ FIXÉ - Nouvelle room avec TryGetProperty
+                        var newRoom = new Room { RoomId = roomId };
+
+                        if (r.TryGetProperty("lux", out var luxEl))
+                            newRoom.Lux = luxEl.GetDouble();
+
+                        if (r.TryGetProperty("lampPower", out var powerEl))
+                            newRoom.LampPower = powerEl.GetInt32();
+
+                        if (r.TryGetProperty("targetLux", out var targetEl))
+                            newRoom.TargetLux = targetEl.GetInt32();
+
+                        if (r.TryGetProperty("mode", out var modeEl))
+                            newRoom.Mode = modeEl.GetString();
+
                         if (r.TryGetProperty("isManualMode", out var isManual))
-                        {
                             newRoom.IsManualMode = isManual.GetBoolean();
-                        }
-                        
-                        // Ajoute les sensors si présents
+
+                        // ✅ FIXÉ - Sensors
                         if (r.TryGetProperty("sensors", out var sensorsElement))
                         {
                             foreach (var s in sensorsElement.EnumerateArray())
                             {
-                                newRoom.Sensors.Add(new Sensor
-                                {
-                                    SensorId = s.GetProperty("sensorId").GetString(),
-                                    Type = s.GetProperty("type").GetString(),
-                                    Value = s.GetProperty("value").GetDouble(),
-                                    LastUpdate = s.GetProperty("lastUpdate").GetInt64(),
-                                    Status = s.GetProperty("status").GetString()
-                                });
+                                var sensor = new Sensor();
+
+                                if (s.TryGetProperty("sensorId", out var sIdEl))
+                                    sensor.SensorId = sIdEl.GetString();
+
+                                if (s.TryGetProperty("type", out var typeEl))
+                                    sensor.Type = typeEl.GetString();
+
+                                if (s.TryGetProperty("value", out var valEl))
+                                    sensor.Value = valEl.GetDouble();
+
+                                if (s.TryGetProperty("lastUpdate", out var updateEl))
+                                    sensor.LastUpdate = updateEl.GetInt64();
+
+                                if (s.TryGetProperty("status", out var statusEl))
+                                    sensor.Status = statusEl.GetString();
+
+                                newRoom.Sensors.Add(sensor);
                             }
                         }
-                        
-                        // Ajoute les lamps si présents
+
+                        // ✅ FIXÉ - Lamps
                         if (r.TryGetProperty("lamps", out var lampsElement))
                         {
                             foreach (var l in lampsElement.EnumerateArray())
                             {
-                                newRoom.Lamps.Add(new Lamp
-                                {
-                                    LampId = l.GetProperty("lampId").GetString(),
-                                    Power = l.GetProperty("power").GetInt32(),
-                                    Status = l.GetProperty("status").GetString(),
-                                    LastUpdate = l.GetProperty("lastUpdate").GetInt64()
-                                });
+                                var lamp = new Lamp();
+
+                                if (l.TryGetProperty("lampId", out var lIdEl))
+                                    lamp.LampId = lIdEl.GetString();
+
+                                if (l.TryGetProperty("power", out var powEl))
+                                    lamp.Power = powEl.GetInt32();
+
+                                if (l.TryGetProperty("pwm", out var pwmEl))
+                                    lamp.Pwm = pwmEl.GetInt32();
+                                else if (l.TryGetProperty("power", out var pow2El))
+                                    lamp.Pwm = pow2El.GetInt32() * 255 / 100;
+
+                                if (l.TryGetProperty("status", out var statEl))
+                                    lamp.Status = statEl.GetString();
+
+                                if (l.TryGetProperty("lastUpdate", out var updEl))
+                                    lamp.LastUpdate = updEl.GetInt64();
+
+                                newRoom.Lamps.Add(lamp);
                             }
                         }
-                        
+
                         Rooms.Add(newRoom);
                         Debug.WriteLine($"✅ Room {newRoom.RoomId} ajoutée");
                     }
                 }
             });
         }
+        catch (KeyNotFoundException ex)
+        {
+            Debug.WriteLine($"❌ Clé manquante: {ex.Message}");
+            Debug.WriteLine($"   StackTrace: {ex.StackTrace}");
+        }
         catch (Exception ex)
         {
             Debug.WriteLine($"❌ Erreur parsing JSON: {ex.Message}");
+            Debug.WriteLine($"   Type: {ex.GetType().Name}");
         }
     }
 }

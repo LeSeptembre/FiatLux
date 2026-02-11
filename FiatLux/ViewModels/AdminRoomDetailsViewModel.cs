@@ -69,7 +69,10 @@ public class AdminRoomDetailsViewModel : BindableObject
 
             foreach (var r in roomsElement.EnumerateArray())
             {
-                var id = r.GetProperty("roomId").GetString();
+                if (!r.TryGetProperty("roomId", out var roomIdEl))
+                    continue;
+
+                var id = roomIdEl.GetString();
                 if (id != RoomId)
                     continue;
 
@@ -106,27 +109,39 @@ public class AdminRoomDetailsViewModel : BindableObject
         // ✅ FIXÉ: Boucle sur le tableau de capteurs
         foreach (var sensorElement in sensorsElement.EnumerateArray())
         {
-            var sensorId = sensorElement.GetProperty("sensorId").GetString();
+            if (!sensorElement.TryGetProperty("sensorId", out var sensorIdElement))
+                continue;
+
+            var sensorId = sensorIdElement.GetString();
             var existing = Sensors.FirstOrDefault(s => s.SensorId == sensorId);
 
             if (existing != null)
             {
                 // Met à jour le capteur existant
-                existing.Value = sensorElement.GetProperty("value").GetDouble();
-                existing.LastUpdate = sensorElement.GetProperty("lastUpdate").GetInt64();
-                existing.Status = sensorElement.GetProperty("status").GetString();
+                if (sensorElement.TryGetProperty("value", out var valueEl))
+                    existing.Value = valueEl.GetDouble();
+
+                if (sensorElement.TryGetProperty("lastUpdate", out var updateEl))
+                    existing.LastUpdate = updateEl.GetInt64();
+
+                if (sensorElement.TryGetProperty("status", out var statusEl))
+                    existing.Status = statusEl.GetString();
             }
             else
             {
                 // Ajoute le nouveau capteur
-                Sensors.Add(new Sensor
-                {
-                    SensorId = sensorId,
-                    Type = "lux",
-                    Value = sensorElement.GetProperty("value").GetDouble(),
-                    LastUpdate = sensorElement.GetProperty("lastUpdate").GetInt64(),
-                    Status = sensorElement.GetProperty("status").GetString()
-                });
+                var newSensor = new Sensor { SensorId = sensorId, Type = "lux" };
+
+                if (sensorElement.TryGetProperty("value", out var valueEl))
+                    newSensor.Value = valueEl.GetDouble();
+
+                if (sensorElement.TryGetProperty("lastUpdate", out var updateEl))
+                    newSensor.LastUpdate = updateEl.GetInt64();
+
+                if (sensorElement.TryGetProperty("status", out var statusEl))
+                    newSensor.Status = statusEl.GetString();
+
+                Sensors.Add(newSensor);
             }
         }
     }
@@ -138,28 +153,49 @@ public class AdminRoomDetailsViewModel : BindableObject
 
         foreach (var l in lampsElement.EnumerateArray())
         {
-            var lampId = l.GetProperty("lampId").GetString();
+            if (!l.TryGetProperty("lampId", out var lampIdElement))
+                continue;
+
+            var lampId = lampIdElement.GetString();
             var existing = Lamps.FirstOrDefault(lamp => lamp.LampId == lampId);
 
             if (existing != null)
             {
                 // Met à jour la lampe existante
-                existing.Power = l.GetProperty("power").GetInt32();
-                existing.Pwm = l.TryGetProperty("pwm", out var pwm) ? pwm.GetInt32() : existing.Power * 255 / 100;
-                existing.Status = l.GetProperty("status").GetString();
-                existing.LastUpdate = l.GetProperty("lastUpdate").GetInt64();
+                if (l.TryGetProperty("power", out var powerEl))
+                    existing.Power = powerEl.GetInt32();
+
+                if (l.TryGetProperty("pwm", out var pwmEl))
+                    existing.Pwm = pwmEl.GetInt32();
+                else if (l.TryGetProperty("power", out var powerEl2))
+                    existing.Pwm = powerEl2.GetInt32() * 255 / 100;
+
+                if (l.TryGetProperty("status", out var statusEl))
+                    existing.Status = statusEl.GetString();
+
+                if (l.TryGetProperty("lastUpdate", out var updateEl))
+                    existing.LastUpdate = updateEl.GetInt64();
             }
             else
             {
                 // Ajoute la nouvelle lampe
-                Lamps.Add(new Lamp
-                {
-                    LampId = lampId,
-                    Power = l.GetProperty("power").GetInt32(),
-                    Pwm = l.TryGetProperty("pwm", out var pwm) ? pwm.GetInt32() : l.GetProperty("power").GetInt32() * 255 / 100,
-                    Status = l.GetProperty("status").GetString(),
-                    LastUpdate = l.GetProperty("lastUpdate").GetInt64()
-                });
+                var newLamp = new Lamp { LampId = lampId };
+
+                if (l.TryGetProperty("power", out var powerEl))
+                    newLamp.Power = powerEl.GetInt32();
+
+                if (l.TryGetProperty("pwm", out var pwmEl))
+                    newLamp.Pwm = pwmEl.GetInt32();
+                else
+                    newLamp.Pwm = newLamp.Power * 255 / 100;
+
+                if (l.TryGetProperty("status", out var statusEl))
+                    newLamp.Status = statusEl.GetString();
+
+                if (l.TryGetProperty("lastUpdate", out var updateEl))
+                    newLamp.LastUpdate = updateEl.GetInt64();
+
+                Lamps.Add(newLamp);
             }
         }
     }
