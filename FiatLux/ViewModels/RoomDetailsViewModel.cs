@@ -46,6 +46,21 @@ public class RoomDetailsViewModel : BindableObject
         set { _targetLux = value; OnPropertyChanged(); }
     }
 
+    private bool _isManualMode = false;
+    public bool IsManualMode
+    {
+        get => _isManualMode;
+        set 
+        { 
+            _isManualMode = value; 
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanChangeMode));
+        }
+    }
+
+    // True si l'utilisateur PEUT changer le mode (pas verrouillé)
+    public bool CanChangeMode => !IsManualMode;
+
     // Properties to check which mode is selected
     public bool IsProSelected => CurrentMode == "Professional" || CurrentMode == "Professionnel";
     public bool IsConfortSelected => CurrentMode == "Comfort" || CurrentMode == "Confort";
@@ -93,6 +108,12 @@ public class RoomDetailsViewModel : BindableObject
                         CurrentPower = r.GetProperty("lampPower").GetInt32();
                         TargetLux = r.GetProperty("targetLux").GetInt32();
                         CurrentMode = r.GetProperty("mode").GetString();
+                        
+                        // Récupère le statut de verrouillage
+                        if (r.TryGetProperty("isManualMode", out var isManual))
+                        {
+                            IsManualMode = isManual.GetBoolean();
+                        }
                     });
                     break;
                 }
@@ -105,6 +126,16 @@ public class RoomDetailsViewModel : BindableObject
     {
         if (!_ws.IsConnected)
             return;
+
+        // Bloque si la salle est en mode manuel (verrouillée par admin)
+        if (IsManualMode)
+        {
+            await Application.Current.MainPage.DisplayAlert(
+                "Salle verrouillée", 
+                "Cette salle est en mode manuel. Contactez un administrateur.", 
+                "OK");
+            return;
+        }
 
         var payload = JsonSerializer.Serialize(new
         {

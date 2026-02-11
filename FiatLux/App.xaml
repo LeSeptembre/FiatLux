@@ -21,6 +21,7 @@
             <!-- Converters -->
             <local:StringToBoolConverter x:Key="StringToBoolConverter"/>
             <local:BoolToColorConverter x:Key="BoolToColorConverter"/>
+            <local:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
             <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
             <local:BoolToConnectionColorConverter x:Key="BoolToConnectionColorConverter"/>
             <local:BoolToManualModeColorConverter x:Key="BoolToManualModeColorConverter"/>

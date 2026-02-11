@@ -36,6 +36,8 @@ public class RoomsViewModel : BindableObject
     }
 
     public ICommand ReconnectCommand { get; }
+    public ICommand AdminCommand { get; }
+    public ICommand ExitAdminCommand { get; }
 
     public RoomsViewModel(WebSocketService ws)
     {
@@ -45,6 +47,8 @@ public class RoomsViewModel : BindableObject
         _ws.ConnectionEstablished += OnConnectionEstablished;
 
         ReconnectCommand = new Command(async () => await Reconnect());
+        AdminCommand = new Command(async () => await Shell.Current.GoToAsync("//adminlogin"));
+        ExitAdminCommand = new Command(async () => await Shell.Current.GoToAsync("//rooms"));
     }
 
     private void OnConnectionEstablished()
@@ -102,21 +106,111 @@ public class RoomsViewModel : BindableObject
 
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                Rooms.Clear();
-
+                // Au lieu de Clear(), on met à jour les rooms existantes
                 foreach (var r in roomsElement.EnumerateArray())
                 {
-                    var room = new Room
+                    var roomId = r.GetProperty("roomId").GetString();
+                    
+                    // Cherche si la room existe déjà
+                    var existingRoom = Rooms.FirstOrDefault(room => room.RoomId == roomId);
+                    
+                    if (existingRoom != null)
                     {
-                        RoomId = r.GetProperty("roomId").GetString(),
-                        Lux = r.GetProperty("lux").GetDouble(),
-                        LampPower = r.GetProperty("lampPower").GetInt32(),
-                        TargetLux = r.GetProperty("targetLux").GetInt32(),
-                        Mode = r.GetProperty("mode").GetString()
-                    };
-
-                    Rooms.Add(room);
-                    Debug.WriteLine($"✅ Room {room.RoomId} ajoutée/maj dans UI");
+                        // Met à jour la room existante
+                        existingRoom.Lux = r.GetProperty("lux").GetDouble();
+                        existingRoom.LampPower = r.GetProperty("lampPower").GetInt32();
+                        existingRoom.TargetLux = r.GetProperty("targetLux").GetInt32();
+                        existingRoom.Mode = r.GetProperty("mode").GetString();
+                        
+                        if (r.TryGetProperty("isManualMode", out var isManual))
+                        {
+                            existingRoom.IsManualMode = isManual.GetBoolean();
+                        }
+                        
+                        // Met à jour les sensors si présents
+                        if (r.TryGetProperty("sensors", out var sensorsElement))
+                        {
+                            existingRoom.Sensors.Clear();
+                            foreach (var s in sensorsElement.EnumerateArray())
+                            {
+                                existingRoom.Sensors.Add(new Sensor
+                                {
+                                    SensorId = s.GetProperty("sensorId").GetString(),
+                                    Type = s.GetProperty("type").GetString(),
+                                    Value = s.GetProperty("value").GetDouble(),
+                                    LastUpdate = s.GetProperty("lastUpdate").GetInt64(),
+                                    Status = s.GetProperty("status").GetString()
+                                });
+                            }
+                        }
+                        
+                        // Met à jour les lamps si présents
+                        if (r.TryGetProperty("lamps", out var lampsElement))
+                        {
+                            existingRoom.Lamps.Clear();
+                            foreach (var l in lampsElement.EnumerateArray())
+                            {
+                                existingRoom.Lamps.Add(new Lamp
+                                {
+                                    LampId = l.GetProperty("lampId").GetString(),
+                                    Power = l.GetProperty("power").GetInt32(),
+                                    Status = l.GetProperty("status").GetString(),
+                                    LastUpdate = l.GetProperty("lastUpdate").GetInt64()
+                                });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Ajoute une nouvelle room
+                        var newRoom = new Room
+                        {
+                            RoomId = roomId,
+                            Lux = r.GetProperty("lux").GetDouble(),
+                            LampPower = r.GetProperty("lampPower").GetInt32(),
+                            TargetLux = r.GetProperty("targetLux").GetInt32(),
+                            Mode = r.GetProperty("mode").GetString()
+                        };
+                        
+                        if (r.TryGetProperty("isManualMode", out var isManual))
+                        {
+                            newRoom.IsManualMode = isManual.GetBoolean();
+                        }
+                        
+                        // Ajoute les sensors si présents
+                        if (r.TryGetProperty("sensors", out var sensorsElement))
+                        {
+                            foreach (var s in sensorsElement.EnumerateArray())
+                            {
+                                newRoom.Sensors.Add(new Sensor
+                                {
+                                    SensorId = s.GetProperty("sensorId").GetString(),
+                                    Type = s.GetProperty("type").GetString(),
+                                    Value = s.GetProperty("value").GetDouble(),
+                                    LastUpdate = s.GetProperty("lastUpdate").GetInt64(),
+                                    Status = s.GetProperty("status").GetString()
+                                });
+                            }
+                        }
+                        
+                        // Ajoute les lamps si présents
+                        if (r.TryGetProperty("lamps", out var lampsElement))
+                        {
+                            foreach (var l in lampsElement.EnumerateArray())
+                            {
+                                newRoom.Lamps.Add(new Lamp
+                                {
+                                    LampId = l.GetProperty("lampId").GetString(),
+                                    Power = l.GetProperty("power").GetInt32(),
+                                    Status = l.GetProperty("status").GetString(),
+                                    LastUpdate = l.GetProperty("lastUpdate").GetInt64()
+                                });
+                            }
+                        }
+                        
+                        Rooms.Add(newRoom);
+                        Debug.WriteLine($"✅ Room {newRoom.RoomId} ajoutée");
+                    }
                 }
             });
         }

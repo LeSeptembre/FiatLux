@@ -4,7 +4,7 @@
              x:Class="FiatLux.Pages.RoomDetailsPage"
              BackgroundColor="#0A0A0A">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="24,0">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Padding="24,0">
         
         <!-- Header with Back Button -->
         <Grid Grid.Row="0" 
@@ -44,8 +44,39 @@
             </VerticalStackLayout>
         </Grid>
 
+        <!-- Lock Warning Banner (visible si IsManualMode = true) -->
+        <Border Grid.Row="1"
+                BackgroundColor="#DC2626"
+                StrokeThickness="0"
+                Padding="20,14"
+                Margin="0,0,0,16"
+                IsVisible="{Binding IsManualMode}">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="10"/>
+            </Border.StrokeShape>
+            
+            <Grid ColumnDefinitions="Auto,*">
+                <Label Grid.Column="0"
+                       Text="🔒"
+                       FontSize="20"
+                       VerticalOptions="Center"
+                       Margin="0,0,12,0"/>
+                
+                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                    <Label Text="Salle verrouillée"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="14"
+                           TextColor="#FFFFFF"/>
+                    <Label Text="Mode manuel activé par un administrateur"
+                           FontFamily="OpenSansRegular"
+                           FontSize="12"
+                           TextColor="#FEE2E2"/>
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+
         <!-- Current Status Cards -->
-        <Grid Grid.Row="1"
+        <Grid Grid.Row="2"
               ColumnDefinitions="*,*,*"
               ColumnSpacing="12"
               Margin="0,0,0,24">
@@ -142,7 +173,7 @@
         </Grid>
 
         <!-- Current Mode Display -->
-        <Border Grid.Row="2"
+        <Border Grid.Row="3"
                 BackgroundColor="#1A1A1A"
                 StrokeThickness="1"
                 Stroke="#2A2A2A"
@@ -175,7 +206,7 @@
         </Border>
 
         <!-- Mode Grid -->
-        <Grid Grid.Row="3"
+        <Grid Grid.Row="4"
               RowDefinitions="*,*"
               ColumnDefinitions="*,*"
               RowSpacing="12"
@@ -185,7 +216,8 @@
             <Border Grid.Row="0" Grid.Column="0"
                     BackgroundColor="#1A1A1A"
                     StrokeThickness="2"
-                    Stroke="{Binding IsProSelected, Converter={StaticResource BoolToColorConverter}}">
+                    Stroke="{Binding IsProSelected, Converter={StaticResource BoolToColorConverter}}"
+                    Opacity="{Binding CanChangeMode, Converter={StaticResource BoolToOpacityConverter}}">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="12"/>
                 </Border.StrokeShape>
@@ -223,7 +255,8 @@
             <Border Grid.Row="0" Grid.Column="1"
                     BackgroundColor="#1A1A1A"
                     StrokeThickness="2"
-                    Stroke="{Binding IsConfortSelected, Converter={StaticResource BoolToColorConverter}}">
+                    Stroke="{Binding IsConfortSelected, Converter={StaticResource BoolToColorConverter}}"
+                    Opacity="{Binding CanChangeMode, Converter={StaticResource BoolToOpacityConverter}}">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="12"/>
                 </Border.StrokeShape>
@@ -261,7 +294,8 @@
             <Border Grid.Row="1" Grid.Column="0"
                     BackgroundColor="#1A1A1A"
                     StrokeThickness="2"
-                    Stroke="{Binding IsAmbianceSelected, Converter={StaticResource BoolToColorConverter}}">
+                    Stroke="{Binding IsAmbianceSelected, Converter={StaticResource BoolToColorConverter}}"
+                    Opacity="{Binding CanChangeMode, Converter={StaticResource BoolToOpacityConverter}}">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="12"/>
                 </Border.StrokeShape>
@@ -299,7 +333,8 @@
             <Border Grid.Row="1" Grid.Column="1"
                     BackgroundColor="#1A1A1A"
                     StrokeThickness="2"
-                    Stroke="{Binding IsTamiseSelected, Converter={StaticResource BoolToColorConverter}}">
+                    Stroke="{Binding IsTamiseSelected, Converter={StaticResource BoolToColorConverter}}"
+                    Opacity="{Binding CanChangeMode, Converter={StaticResource BoolToOpacityConverter}}">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="12"/>
                 </Border.StrokeShape>

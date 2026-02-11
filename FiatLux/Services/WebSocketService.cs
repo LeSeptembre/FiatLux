@@ -3,7 +3,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Maui.Dispatching;
+using System.Text.Json;
 using System.Diagnostics;
 
 namespace FiatLux.Services;
@@ -13,17 +13,29 @@ public class WebSocketService
     private ClientWebSocket _ws;
     private CancellationTokenSource _cts;
     private string _currentUrl;
+    private string _sessionId;
 
     public bool IsConnected => _ws?.State == WebSocketState.Open;
+    public string AdminToken { get; private set; }
+    public string SessionId => _sessionId;
+    public bool IsAdmin => !string.IsNullOrEmpty(AdminToken);
 
     public event Action<string> MessageReceived;
     public event Action ConnectionEstablished;
     public event Action ConnectionLost;
+    public event Action<bool, string> AdminAuthResponse;
+
+    public WebSocketService()
+    {
+        // Génère un session ID unique au démarrage de l'app
+        _sessionId = $"maui_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+        Debug.WriteLine($"🆔 Session ID: {_sessionId}");
+    }
 
     public async Task ConnectAsync(string url)
     {
         _currentUrl = url;
-        
+
         if (_ws != null && _ws.State == WebSocketState.Open)
             return;
 
@@ -34,6 +46,7 @@ public class WebSocketService
         {
             await _ws.ConnectAsync(new Uri(url), _cts.Token);
             Debug.WriteLine($"✅ WebSocket connecté à {url}");
+            Debug.WriteLine($"🆔 Session: {_sessionId}");
             ConnectionEstablished?.Invoke();
             _ = ReceiveLoop();
         }
@@ -65,6 +78,8 @@ public class WebSocketService
                 {
                     var msg = Encoding.UTF8.GetString(buffer, 0, result.Count);
                     Debug.WriteLine($"📥 Reçu du serveur: {msg}");
+
+                    ParseAdminResponse(msg);
                     MessageReceived?.Invoke(msg);
                 }
             }
@@ -87,7 +102,6 @@ public class WebSocketService
             }
         }
 
-        // Si on sort de la boucle et que ce n'est pas une fermeture propre
         if (_ws.State != WebSocketState.Closed && _ws.State != WebSocketState.Aborted)
         {
             ConnectionLost?.Invoke();
@@ -115,12 +129,108 @@ public class WebSocketService
         }
     }
 
+    public async Task RequestAdminAsync(string password)
+    {
+        var payload = new
+        {
+            command = "requestAdmin",
+            password,
+            sessionId = _sessionId // ✅ Envoie le session ID
+        };
+
+        await SendAsync(JsonSerializer.Serialize(payload));
+        Debug.WriteLine($"🔑 Demande admin avec session: {_sessionId}");
+    }
+
+    public async Task SetManualModeAsync(string roomId, bool enabled)
+    {
+        if (!IsAdmin)
+        {
+            Debug.WriteLine("❌ Pas de token admin");
+            return;
+        }
+
+        var payload = new
+        {
+            command = "setManualMode",
+            roomId,
+            enabled,
+            adminToken = AdminToken,
+            sessionId = _sessionId // ✅ Envoie le session ID
+        };
+
+        await SendAsync(JsonSerializer.Serialize(payload));
+        Debug.WriteLine($"🔧 Mode manuel [Session: {_sessionId}]");
+    }
+
+    public async Task SetManualTargetAsync(string roomId, int target)
+    {
+        if (!IsAdmin)
+        {
+            Debug.WriteLine("❌ Pas de token admin");
+            return;
+        }
+
+        var payload = new
+        {
+            command = "setManualTarget",
+            roomId,
+            target,
+            adminToken = AdminToken,
+            sessionId = _sessionId // ✅ Envoie le session ID
+        };
+
+        await SendAsync(JsonSerializer.Serialize(payload));
+        Debug.WriteLine($"🎯 Target manuel [Session: {_sessionId}]");
+    }
+
+    private void ParseAdminResponse(string message)
+    {
+        try
+        {
+            if (message.Contains("\"adminToken\"") || message.Contains("\"success\""))
+            {
+                var doc = JsonDocument.Parse(message);
+
+                if (doc.RootElement.TryGetProperty("success", out var success))
+                {
+                    bool isSuccess = success.GetBoolean();
+
+                    if (isSuccess && doc.RootElement.TryGetProperty("adminToken", out var token))
+                    {
+                        AdminToken = token.GetString();
+                        Debug.WriteLine($"✅ Token admin reçu: {AdminToken}");
+                        Debug.WriteLine($"🆔 Session: {_sessionId}");
+                        AdminAuthResponse?.Invoke(true, AdminToken);
+                    }
+                    else if (!isSuccess && doc.RootElement.TryGetProperty("error", out var error))
+                    {
+                        string errorMsg = error.GetString();
+                        Debug.WriteLine($"❌ Authentification échouée: {errorMsg}");
+                        AdminAuthResponse?.Invoke(false, errorMsg);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"⚠️ Erreur parsing réponse admin: {ex.Message}");
+        }
+    }
+
+    public void ClearAdminToken()
+    {
+        AdminToken = null;
+        Debug.WriteLine("🔓 Token admin effacé");
+    }
+
     public async Task DisconnectAsync()
     {
         if (_ws != null)
         {
             _cts?.Cancel();
-            
+            AdminToken = null;
+
             if (_ws.State == WebSocketState.Open)
             {
                 try
@@ -132,7 +242,7 @@ public class WebSocketService
                     Debug.WriteLine($"⚠️ Erreur lors de la fermeture: {ex.Message}");
                 }
             }
-            
+
             _ws.Dispose();
             _ws = null;
         }
@@ -141,9 +251,10 @@ public class WebSocketService
     public async Task<bool> ReconnectAsync()
     {
         Debug.WriteLine("🔄 Tentative de reconnexion...");
-        
+        Debug.WriteLine($"🆔 Même session: {_sessionId}");
+
         await DisconnectAsync();
-        
+
         if (string.IsNullOrEmpty(_currentUrl))
         {
             Debug.WriteLine("❌ Pas d'URL enregistrée pour la reconnexion");

@@ -8,16 +8,41 @@
     <Grid RowDefinitions="Auto,Auto,*" Padding="24,0">
         
         <!-- Header -->
-        <VerticalStackLayout Grid.Row="0" Spacing="4" Margin="0,60,0,16">
-            <Label Text="Rooms"
-                   FontFamily="OpenSansSemibold"
-                   FontSize="28"
-                   TextColor="#FFFFFF"/>
-            <Label Text="{Binding Rooms.Count, StringFormat='{0} active rooms'}"
-                   FontFamily="OpenSansRegular"
-                   FontSize="14"
-                   TextColor="#6B6B6B"/>
-        </VerticalStackLayout>
+        <Grid Grid.Row="0" 
+              ColumnDefinitions="*,Auto"
+              Margin="0,60,0,16">
+            <VerticalStackLayout Grid.Column="0" Spacing="4">
+                <Label Text="Rooms"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="28"
+                       TextColor="#FFFFFF"/>
+                <Label Text="{Binding Rooms.Count, StringFormat='{0} active rooms'}"
+                       FontFamily="OpenSansRegular"
+                       FontSize="14"
+                       TextColor="#6B6B6B"/>
+            </VerticalStackLayout>
+            
+            <!-- Admin Button -->
+            <Border Grid.Column="1"
+                    BackgroundColor="#1A1A1A"
+                    StrokeThickness="1"
+                    Stroke="#2A2A2A"
+                    WidthRequest="44"
+                    HeightRequest="44"
+                    VerticalOptions="Center">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10"/>
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding AdminCommand}"/>
+                </Border.GestureRecognizers>
+                <Label Text="⚙"
+                       FontSize="20"
+                       TextColor="#FFFFFF"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"/>
+            </Border>
+        </Grid>
 
         <!-- Connection Status Banner -->
         <Border Grid.Row="1"

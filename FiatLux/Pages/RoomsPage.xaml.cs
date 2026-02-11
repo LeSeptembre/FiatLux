@@ -1,5 +1,4 @@
 using FiatLux.Models;
-using FiatLux.Services;
 using FiatLux.ViewModels;
 
 namespace FiatLux.Pages;
@@ -9,7 +8,7 @@ public partial class RoomsPage : ContentPage
     public RoomsPage(RoomsViewModel vm)
     {
         InitializeComponent();
-        BindingContext = vm; // IMPORTANT : ce vm est injecté avec le WebSocket connecté
+        BindingContext = vm;
     }
 
     private async void OnRoomSelected(object sender, SelectionChangedEventArgs e)

@@ -8,11 +8,14 @@ namespace FiatLux.ViewModels;
 public class AdminLoginViewModel : BindableObject
 {
     private readonly WebSocketService _ws;
+    private TaskCompletionSource<bool> _authTcs;
 
     public AdminLoginViewModel(WebSocketService ws)
     {
         _ws = ws;
-        LoginCommand = new Command(async () => await Login());
+        _ws.AdminAuthResponse += OnAdminAuthResponse;
+
+        LoginCommand = new Command(async () => await Login(), () => !_isLoading);
         BackCommand = new Command(async () => await Shell.Current.GoToAsync("//rooms"));
     }
 
@@ -30,40 +33,87 @@ public class AdminLoginViewModel : BindableObject
         set { _statusMessage = value; OnPropertyChanged(); }
     }
 
+    private bool _isLoading = false;
+    public bool IsLoading
+    {
+        get => _isLoading;
+        set
+        {
+            _isLoading = value;
+            OnPropertyChanged();
+            ((Command)LoginCommand).ChangeCanExecute();
+        }
+    }
+
     public ICommand LoginCommand { get; }
     public ICommand BackCommand { get; }
+
+    private void OnAdminAuthResponse(bool success, string message)
+    {
+        if (_authTcs != null && !_authTcs.Task.IsCompleted)
+        {
+            _authTcs.SetResult(success);
+        }
+    }
 
     private async Task Login()
     {
         if (string.IsNullOrWhiteSpace(Password))
         {
-            StatusMessage = "Please enter a password";
+            StatusMessage = "Entrez le mot de passe admin";
             return;
         }
 
         if (!_ws.IsConnected)
         {
-            StatusMessage = "Not connected to server";
+            StatusMessage = "Non connecté au serveur";
             return;
         }
 
-        StatusMessage = "Authenticating...";
+        IsLoading = true;
+        StatusMessage = "Authentification...";
 
-        var payload = JsonSerializer.Serialize(new
+        try
         {
-            command = "requestAdmin",
-            password = Password
-        });
+            _authTcs = new TaskCompletionSource<bool>();
 
-        await _ws.SendAsync(payload);
+            // ✅ Utilise RequestAdminAsync qui envoie automatiquement le sessionId
+            await _ws.RequestAdminAsync(Password);
 
-        // Attendre la réponse (sera gérée par un event dans WebSocketService)
-        // Pour l'instant on redirige directement
-        await Task.Delay(500);
-        
-        StatusMessage = "Login successful";
-        await Task.Delay(500);
-        
-        await Shell.Current.GoToAsync("//adminrooms");
+            // Attendre la réponse (timeout de 5 secondes)
+            var timeoutTask = Task.Delay(5000);
+            var completedTask = await Task.WhenAny(_authTcs.Task, timeoutTask);
+
+            if (completedTask == timeoutTask)
+            {
+                StatusMessage = "Timeout - pas de réponse du serveur";
+                IsLoading = false;
+                return;
+            }
+
+            bool success = await _authTcs.Task;
+
+            if (success)
+            {
+                StatusMessage = "✅ Authentification réussie";
+                await Task.Delay(500);
+                await Shell.Current.GoToAsync("//adminrooms");
+            }
+            else
+            {
+                StatusMessage = "❌ Mot de passe incorrect";
+                Password = ""; // Vide le champ
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Erreur: {ex.Message}";
+            Debug.WriteLine($"❌ Erreur login admin: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+            _authTcs = null;
+        }
     }
 }

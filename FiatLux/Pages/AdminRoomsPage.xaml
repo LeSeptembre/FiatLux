@@ -8,16 +8,43 @@
     <Grid RowDefinitions="Auto,*" Padding="24,0">
         
         <!-- Header -->
-        <VerticalStackLayout Grid.Row="0" Spacing="4" Margin="0,60,0,24">
-            <Label Text="Admin Panel"
-                   FontFamily="OpenSansSemibold"
-                   FontSize="28"
-                   TextColor="#FFFFFF"/>
-            <Label Text="{Binding Rooms.Count, StringFormat='{0} rooms | Advanced controls'}"
-                   FontFamily="OpenSansRegular"
-                   FontSize="14"
-                   TextColor="#6B6B6B"/>
-        </VerticalStackLayout>
+        <Grid Grid.Row="0" 
+              ColumnDefinitions="Auto,*,Auto"
+              Margin="0,60,0,24">
+            
+            <!-- Exit Admin Button -->
+            <Border Grid.Column="0"
+                    BackgroundColor="#1A1A1A"
+                    StrokeThickness="1"
+                    Stroke="#2A2A2A"
+                    WidthRequest="44"
+                    HeightRequest="44"
+                    VerticalOptions="Center"
+                    Margin="0,0,16,0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10"/>
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ExitAdminCommand}"/>
+                </Border.GestureRecognizers>
+                <Label Text="←"
+                       FontSize="24"
+                       TextColor="#FFFFFF"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"/>
+            </Border>
+            
+            <VerticalStackLayout Grid.Column="1" Spacing="4">
+                <Label Text="Admin Panel"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="28"
+                       TextColor="#FFFFFF"/>
+                <Label Text="{Binding Rooms.Count, StringFormat='{0} rooms | Advanced controls'}"
+                       FontFamily="OpenSansRegular"
+                       FontSize="14"
+                       TextColor="#6B6B6B"/>
+            </VerticalStackLayout>
+        </Grid>
 
         <!-- Rooms List -->
         <CollectionView Grid.Row="1"
